@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from embeddings.build import search as srx
+from embeddings.build import build_embeddings
 import typer
 from typer_annotations import (
     notes_dir_typer,
@@ -27,24 +29,28 @@ def search(
     query: str,
     notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
     model_name: embed_model_typer = "mxbai-embed-large",
+    pretty_print: bool = True,
 ):
     """
     Perform a semantic search through notes and generate embeddings if needed
     """
-    print(
-        toml.dumps(
-            {
-                "arguments": {
-                    "query": query,
-                    "model_name": model_name,
-                    "notes_dir": notes_dir,
-                },
-                "config": {
-                    "db": cfg.get_embeddings_location(notes_dir, model_name),
-                },
-            }
-        )
+
+    results = srx(
+        query,
+        str(notes_dir),
+        model_name,
+        cfg.get_embeddings_location(notes_dir, model_name),
+        pretty_print=pretty_print,
     )
+    if not pretty_print:
+        # Note this is reversed for terminal output
+        paths = results["paths"]
+        # Drop duplicates but keep order
+        unique_paths = []
+        for p in paths:
+            if p not in unique_paths:
+                unique_paths.append(p)
+        [print(os.path.relpath(p, os.getcwd())) for p in unique_paths]
 
 
 @embeddings.command()
@@ -68,6 +74,8 @@ def regenerate(
             }
         )
     )
+    os.removedirs(cfg.get_embeddings_location(notes_dir, model_name))
+    build_embeddings(cfg.get_embeddings_location(notes_dir, model_name), str(notes_dir))
 
 
 @embeddings.command()

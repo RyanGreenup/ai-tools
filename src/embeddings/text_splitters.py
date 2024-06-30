@@ -1,31 +1,20 @@
-
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_core.documents.base import Document
-import chromadb
-import ollama
+from pprint import pprint
 import os
 
 
-def get_home():
-    HOME = os.getenv("HOME")
-    assert HOME, "HOME environment variable not set"
-    return HOME
-
-
-# TODO make this a config or CLI
-# NOTES_DIR = f"{get_home()}/Notes/slipbox/"
-NOTES_DIR = f"{get_home()}/Notes/slipbox"
-
-
-def get_text_chunks(size: int = 1024, overlap: float = 0.15) -> list[Document]:
+def get_text_chunks(
+    notes_dir: str, size: int = 1024, overlap: float = 0.15
+) -> dict[str, str]:
     """
     A function to get text files from a directory, split per size
     and return text and filename
     """
     # Create a directory Loader [fn_docs_doc_loader]
     loader = DirectoryLoader(
-        NOTES_DIR,
+        notes_dir,
         glob="**/*.md",
         show_progress=True,
         use_multithreading=True,
@@ -39,13 +28,25 @@ def get_text_chunks(size: int = 1024, overlap: float = 0.15) -> list[Document]:
     text_splitter = CharacterTextSplitter(chunk_size=size, chunk_overlap=0.1)
     texts = text_splitter.split_documents(documents)
 
+    # Get back a dictionary
+    texts: dict[str, str] = {
+        s: c
+        for s, c in zip(
+            [d.metadata["source"] for d in texts], [d.page_content for d in texts]
+        )
+    }
+
     return texts
 
 
-docs = get_text_chunks()
+def main():
+    """
+    Print out chunked documents
+    """
+    docs = get_text_chunks(os.path.expanduser("~") + "/Notes/slipbox")
+
+    pprint(docs)
 
 
-content = docs[1].page_content
-source = docs[1].metadata["source"]
-print(source)
-print(content.replace("\n", "\n\t"))
+if __name__ == "__main__":
+    main()

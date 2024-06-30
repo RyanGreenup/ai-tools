@@ -8,7 +8,10 @@ import toml
 HOME = os.path.expanduser("~")
 
 
-def get_project_name(file_path: str = "pyproject.toml") -> str:
+def get_project_name() -> str:
+    file_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "../pyproject.toml")
+    )
     with open(file_path, "r") as f:
         data = toml.load(f)
     return data["tool"]["poetry"]["name"]
@@ -26,12 +29,9 @@ class Config:
         self.model_name = model_name
 
     def get_embeddings_location(self, notes_dir: Path, model_name: str) -> str:
-
         # Get the cache directory
         xdg_cache_dir = os.getenv("XDG_CACHE_HOME")
-        xdg_cache_dir = (
-            xdg_cache_dir if xdg_cache_dir is not None else f"{HOME}/.cache"
-        )
+        xdg_cache_dir = xdg_cache_dir if xdg_cache_dir is not None else f"{HOME}/.cache"
 
         # Get the directory names
         dir_m = self.model_name.replace("/", "--")

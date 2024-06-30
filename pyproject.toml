@@ -6,7 +6,7 @@ authors = ["ryan <exogenesis@protonmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 ollama = "^0.2.1"
 tqdm = "^4.66.4"
 chromadb = "^0.5.3"
@@ -14,6 +14,7 @@ typer = "^0.12.3"
 langchain-community = "^0.2.6"
 langchain-text-splitters = "^0.2.2"
 toml = "^0.10.2"
+unstructured = {extras = ["md"], version = "^0.14.9"}
 
 
 [tool.poetry.group.dev.dependencies]
