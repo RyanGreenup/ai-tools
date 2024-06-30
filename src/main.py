@@ -138,6 +138,31 @@ def rag(
         )
     )
 
+@app.command()
+def self_instruct():
+    """
+    Generate question/answer pairs from documentation to be used for 
+    fine-tuning a model or practice questions etc.
+    """
+    pass
+
+@app.command()
+def rag_questions():
+    """
+    Loop through questions in a markdown file and generate answers
+    using rag
+
+    TODO should allow this to use GPT4 as well as ollama
+    """
+    pass
+
+@app.command()
+def summarize():
+    """
+    Summarize a collection of documents using a model
+    via either mapreduce or recursive clustering
+    """
+    pass
 
 @app.command()
 def chat(
