@@ -47,7 +47,7 @@ def get_rag_location(notes_dir: Path, model_name: str) -> str:
     return db_path
 
 
-def get_chat_dir(notes_dir: Path | None = None) -> str:
+def get_chat_dir(notes_dir: Path | None = None) -> Path:
     """Get a directory to write chats to.
 
     Parameters
@@ -58,22 +58,35 @@ def get_chat_dir(notes_dir: Path | None = None) -> str:
 
     Returns
     -------
-    str
+    pathlib.Path
         The path to the directory where chats will be written.
     """
     # Handle Optional RAG Directory
     if notes_dir:
-        dir_n = str(notes_dir).replace(HOME, "").replace("/", "", 1).replace("/", "--")
+        dir_n = (
+            str(notes_dir).replace(HOME, "").replace(os.sep, "", 1).replace(os.sep, "--")
+        )
         dir_n = f"rag/{dir_n}"
     else:
         dir_n = "chats"
 
     # Get the XDG Location
-    xdg_data_dir = os.getenv("XDG_DATA_HOME")
-    xdg_data_dir = xdg_data_dir if xdg_data_dir is not None else f"{HOME}/.local/share"
-
+    xdg_data_dir = os.getenv(
+        "XDG_DATA_HOME", os.path.join(os.path.expanduser("~"), ".local", "share")
+    )
     # Get the time
-    now = str(dt.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    now = date_string()
 
-    # Return the chat directory
-    return f"{xdg_data_dir}/{get_project_name()}/{dir_n}/{now}"
+    return Path(os.path.join(xdg_data_dir, get_project_name(), dir_n, now))
+
+
+def date_string() -> str:
+    """
+    A function to return the current date ant time as a string for use as a dir
+    or file name
+    """
+    return str(dt.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
+
+SYSTEM_MESSAGE = """\
+You are a helpful AI assistant"""

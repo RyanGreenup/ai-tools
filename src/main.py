@@ -3,8 +3,13 @@ from dataclasses import dataclass
 from embeddings.build import search as srx
 from embeddings.build import live_search as live_srx
 from embeddings.build import build_embeddings
+from chat import chat as cht
+from config import SYSTEM_MESSAGE
+from datetime import datetime as dt
+from config import date_string
 import shutil
 import typer
+import subprocess
 from typer_annotations import (
     input_dir_typer,
     embed_model_typer,
@@ -57,7 +62,7 @@ class Options:
 def embeddings_callback(
     ctx: typer.Context,
     input_dir: input_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
-    chat_model_name: chat_model_typer = "codestral",
+    chat_model_name: chat_model_typer = "phi3",
     embed_model_name: embed_model_typer = "mxbai-embed-large",
 ):
     """
@@ -172,14 +177,22 @@ def summarize(
 @app.command()
 def chat(
     ctx: typer.Context,
-    editor: editor = "nvim",
+    editor: editor = "neovide",
     open_editor: open_editor = False,
+    system_message: str = SYSTEM_MESSAGE,
 ):
     """
     Start a chat and write to a markdown file, optionally open in an editor
     """
     print(ctx.obj)
-    print("TODO implement this")
+    chat_path = Path(os.path.join(ctx.obj.chat_location, f"{date_string()}.md"))
+    if open_editor:
+        subprocess.run([editor, chat_path])
+    cht(
+        ctx.obj.chat_model_name,
+        chat_path,
+        system_message,
+    )
 
 
 if __name__ == "__main__":
