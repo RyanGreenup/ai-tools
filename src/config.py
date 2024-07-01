@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 import toml
+from datetime import datetime as dt
 
 
 HOME = os.path.expanduser("~")
@@ -71,5 +72,8 @@ def get_chat_dir(notes_dir: Path | None = None) -> str:
     xdg_data_dir = os.getenv("XDG_DATA_HOME")
     xdg_data_dir = xdg_data_dir if xdg_data_dir is not None else f"{HOME}/.local/share"
 
+    # Get the time
+    now = str(dt.now().strftime("%Y-%m-%d_%H-%M-%S"))
+
     # Return the chat directory
-    return f"{xdg_data_dir}/{get_project_name()}/{dir_n}"
+    return f"{xdg_data_dir}/{get_project_name()}/{dir_n}/{now}"
