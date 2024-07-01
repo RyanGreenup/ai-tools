@@ -98,6 +98,38 @@ class MarkdownChat:
 
 
 def chat(chat_model: str, chat_path: Path, system_message: str):
+    """
+    Function to interactively chat with a model.
+
+    Parameters
+    ----------
+    chat_model : str
+        The name of the chat model to use.
+    chat_path : Path
+        The path to the file where the chat history will be saved.
+    system_message : str
+        The initial system message to set up the conversation context.
+
+    Returns
+    -------
+    None
+        This function does not return a value, but it saves the chat history in a file.
+
+    Notes
+    -----
+    This function uses an interactive loop where it waits for user input to modify
+    the chat history in a .md file, sends the modified chat to the model, and then
+    adds the assistant's response to the chat history. The loop continues until
+    the user exits with C-c or inputs 'q', 'quit', or 'exit'.
+
+    Examples
+    --------
+    >>> chat('llama3', Path('/tmp/chat_history.md'), "You are a helpful assistant.")
+    Modify /home/user/chat_history.md as needed and press enter to continue (q to exit):
+    Assistant's response...
+    Modify /home/user/chat_history.md as needed and press enter to continue (q to exit): q
+
+    """
     # Initialize a chat object
     md_chat = MarkdownChat(
         chat_path, data=[{"role": "System", "content": system_message}]
