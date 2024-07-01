@@ -6,11 +6,11 @@ from embeddings.build import build_embeddings
 import shutil
 import typer
 from typer_annotations import (
-    notes_dir_typer,
+    input_dir_typer,
     embed_model_typer,
     chat_model_typer,
     editor,
-    chat_dir_typer,
+    output_dir_typer,
     open_editor,
 )
 from pathlib import Path
@@ -20,16 +20,18 @@ import toml
 
 
 app = typer.Typer()
-embeddings = typer.Typer()
-app.add_typer(embeddings, name="embeddings")
 
 
 @dataclass
-class EmbeddingsOptions:
+class Options:
     notes_dir: Path
     model_name: str
 
     def __post_init__(self):
+        if not self.notes_dir.exists():
+            raise FileNotFoundError(
+                f"Notes directory {self.notes_dir} not found and must exist"
+            )
         self.db_location = cfg.get_embeddings_location(self.notes_dir, self.model_name)
         self.chat_location = cfg.get_chat_dir(self.notes_dir)
 
@@ -48,10 +50,10 @@ class EmbeddingsOptions:
         )
 
 
-@embeddings.callback()
+@app.callback()
 def embeddings_callback(
     ctx: typer.Context,
-    notes_dir: notes_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
+    notes_dir: input_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
     chat_model_name: chat_model_typer = "codestral",
     embed_model_name: embed_model_typer = "mxbai-embed-large",
 ):
@@ -59,155 +61,124 @@ def embeddings_callback(
     A callback function that initializes a singleton object
     with the required options
     """
-    ctx.obj = EmbeddingsOptions(notes_dir, embed_model_name)
+    ctx.obj = Options(notes_dir, embed_model_name)
 
 
 HOME = os.path.expanduser("~")
 
 
-@embeddings.command()
+@app.command()
 def search(
+    ctx: typer.Context,
     query: str,
-    notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
-    model_name: embed_model_typer = "mxbai-embed-large",
 ):
     """
     Perform a semantic search through notes and generate embeddings if needed
     """
+    notes_dir = ctx.obj.notes_dir
+    model_name = ctx.obj.model_name
+    db_location = ctx.obj.db_location
 
-    results = srx(
-        query,
-        str(notes_dir),
-        model_name,
-        cfg.get_embeddings_location(notes_dir, model_name),
-    )
+    results = srx(query, str(notes_dir), model_name, db_location)
     # Note this is reversed for terminal output
     paths = results["paths"]
-    # Drop duplicates but keep order
-    unique_paths = []
-    for p in paths:
-        if p not in unique_paths:
-            unique_paths.append(p)
-    [print(os.path.relpath(p, os.getcwd())) for p in unique_paths]
+    # Drop Duplicates but preserve order
+    uniq = [item for i, item in enumerate(paths) if paths.index(item) == i]
+    [print(os.path.relpath(p, os.getcwd())) for p in uniq]
 
 
-@embeddings.command()
+@app.command()
 def live_search(
-    notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
-    model_name: embed_model_typer = "mxbai-embed-large",
-    pretty_print: bool = True,
+    ctx: typer.Context,
 ):
     """
     Perform a semantic search through notes and generate embeddings if needed
+
+    TODO should this just be an option?
     """
-    live_srx(
-        str(notes_dir), model_name, cfg.get_embeddings_location(notes_dir, model_name)
-    )
+
+    notes_dir = ctx.obj.notes_dir
+    model_name = ctx.obj.model_name
+    db_location = ctx.obj.db_location
+    live_srx(str(notes_dir), model_name, db_location)
 
 
-@embeddings.command()
-def regenerate(
-    notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
-    model_name: embed_model_typer = "mxbai-embed-large",
+@app.command()
+def rebuild_embeddings(
+    ctx: typer.Context,
 ):
     """
-    Regenerate the embeddings from scratch
+    Regenerate the embeddings from scratch, i.e. reindex the notes
     """
-    print(
-        toml.dumps(
-            {
-                "arguments": {
-                    "model_name": model_name,
-                    "notes_dir": notes_dir,
-                },
-                "config": {
-                    "db": cfg.get_embeddings_location(notes_dir, model_name),
-                },
-            }
-        )
-    )
+    notes_dir = ctx.obj.notes_dir
+    model_name = ctx.obj.model_name
+    db_location = ctx.obj.db_location
+
     shutil.rmtree(cfg.get_embeddings_location(notes_dir, model_name))
-    build_embeddings(
-        cfg.get_embeddings_location(notes_dir, model_name), str(notes_dir), model_name
-    )
+    build_embeddings(db_location, str(notes_dir), model_name)
 
 
-@embeddings.command()
-def update(
-    notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
-    model_name: embed_model_typer = "mxbai-embed-large",
-):
-    """
-    Regenerate the embeddings from scratch
-    """
-    print(
-        toml.dumps(
-            {
-                "arguments": {
-                    "model_name": model_name,
-                    "notes_dir": notes_dir,
-                },
-                "config": {
-                    "db": cfg.get_embeddings_location(notes_dir, model_name),
-                },
-            }
-        )
-    )
-
-
-@embeddings.command()
+@app.command()
 def rag(
     ctx: typer.Context,
-    notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
-    embed_model_name: embed_model_typer = "mxbai-embed-large",
-    chat_model_name: embed_model_typer = "codestral",
 ):
     """
     Use RAG to generate text from a query
     """
     print(ctx.obj)
-    
 
 
 @app.command()
-def self_instruct():
+def self_instruct(
+    ctx: typer.Context,
+):
     """
     Generate question/answer pairs from documentation to be used for
     fine-tuning a model or practice questions etc.
     """
+    print(ctx.obj)
     pass
 
 
 @app.command()
-def rag_questions():
+def rag_questions(
+    ctx: typer.Context,
+):
     """
     Loop through questions in a markdown file and generate answers
     using rag
 
     TODO should allow this to use GPT4 as well as ollama
+
+    TODO should this be an option or a subcommand?
+         Probably an option
     """
+    print(ctx.obj)
     pass
 
 
 @app.command()
-def summarize():
+def summarize(
+    ctx: typer.Context,
+):
     """
     Summarize a collection of documents using a model
     via either mapreduce or recursive clustering
     """
+    print(ctx.obj)
     pass
 
 
 @app.command()
 def chat(
-    chat_model: chat_model_typer = "codestral",
-    chat_dir: chat_dir_typer = Path(cfg.get_chat_dir()),
+    ctx: typer.Context,
     editor: editor = "nvim",
     open_editor: open_editor = False,
 ):
     """
     Start a chat and write to a markdown file, optionally open in an editor
     """
+    print(ctx.obj)
     print("TODO implement this")
 
 
