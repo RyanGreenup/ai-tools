@@ -20,7 +20,6 @@ import os
 import sys
 
 
-
 def plot_with_hover(
     x: Iterable[float],
     y: Iterable[float],
@@ -99,7 +98,12 @@ def bokeh_plot(x, y, clusters, chunks):
     color_mapper = LinearColorMapper(
         palette="Magma256", low=min(clusters), high=max(clusters)
     )
-    source = {"x": x, "y": y, "chunks": [markdown(c) for c in chunks], "clusters": clusters}
+    source = {
+        "x": x,
+        "y": y,
+        "chunks": [markdown(c) for c in chunks],
+        "clusters": clusters,
+    }
 
     # Create the figure
     p = figure(
@@ -164,6 +168,8 @@ def cluster(embeddings: ndarray, n_clusters: int) -> ndarray:
 
 
 def vis(db_location: str, notes_dir: Path, model_name: str):
+    # TODO scale size by pagerank
+
     # Get the embeddings and Metadata
     if not os.path.exists(db_location):
         print(
@@ -178,7 +184,13 @@ def vis(db_location: str, notes_dir: Path, model_name: str):
     embeddings = db["embeddings"]
     paths = [d["path"] for d in db["metadatas"]]
     chunks = db["documents"]
-    title_paths = [os.path.basename(os.path.splitext(p)[0]).replace("_", "/").replace("-", " ") for p in paths]
+    title_paths = [
+        str(os.path.basename(os.path.splitext(p)[0]))
+        .title()
+        .replace("_", "/")
+        .replace("-", " ")
+        for p in paths
+    ]
     chunks = [f"# {p}\n{c}" for p, c in zip(title_paths, chunks)]
 
     # Perform KNN clustering
@@ -192,12 +204,12 @@ def vis(db_location: str, notes_dir: Path, model_name: str):
     import pandas as pd
 
     # Assuming `x`, `y`, and `chunks` are already defined
-    source = pd.DataFrame({'x': x, 'y': y, 'chunks': chunks})
+    source = pd.DataFrame({"x": x, "y": y, "chunks": chunks})
 
     TOOLTIPS = [("Chunk", "@chunks")]
 
     p = figure(tooltips=TOOLTIPS)
-    p.circle('x', 'y', source=source)
+    p.circle("x", "y", source=source)
 
     output_notebook()
     show(p)
