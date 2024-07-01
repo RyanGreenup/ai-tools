@@ -24,23 +24,26 @@ app = typer.Typer()
 
 @dataclass
 class Options:
-    notes_dir: Path
-    model_name: str
+    input_dir: Path
+    embed_model_name: str
+    chat_model_name: str
 
     def __post_init__(self):
-        if not self.notes_dir.exists():
+        if not self.input_dir.exists():
             raise FileNotFoundError(
-                f"Notes directory {self.notes_dir} not found and must exist"
+                f"Notes directory {self.input_dir} not found and must exist"
             )
-        self.db_location = cfg.get_embeddings_location(self.notes_dir, self.model_name)
-        self.chat_location = cfg.get_chat_dir(self.notes_dir)
+        self.db_location = cfg.get_embeddings_location(
+            self.input_dir, self.embed_model_name
+        )
+        self.chat_location = cfg.get_chat_dir(self.input_dir)
 
     def __repr__(self):
         return toml.dumps(
             {
                 "arguments": {
-                    "notes_dir": self.notes_dir,
-                    "embed_model_name": self.model_name,
+                    "notes_dir": self.input_dir,
+                    "embed_model_name": self.embed_model_name,
                 },
                 "config": {
                     "db": self.db_location,
@@ -53,7 +56,7 @@ class Options:
 @app.callback()
 def embeddings_callback(
     ctx: typer.Context,
-    notes_dir: input_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
+    input_dir: input_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
     chat_model_name: chat_model_typer = "codestral",
     embed_model_name: embed_model_typer = "mxbai-embed-large",
 ):
@@ -61,10 +64,7 @@ def embeddings_callback(
     A callback function that initializes a singleton object
     with the required options
     """
-    ctx.obj = Options(notes_dir, embed_model_name)
-
-
-HOME = os.path.expanduser("~")
+    ctx.obj = Options(input_dir, embed_model_name, chat_model_name)
 
 
 @app.command()
@@ -75,8 +75,8 @@ def search(
     """
     Perform a semantic search through notes and generate embeddings if needed
     """
-    notes_dir = ctx.obj.notes_dir
-    model_name = ctx.obj.model_name
+    notes_dir = ctx.obj.input_dir
+    model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
     results = srx(query, str(notes_dir), model_name, db_location)
@@ -97,8 +97,8 @@ def live_search(
     TODO should this just be an option?
     """
 
-    notes_dir = ctx.obj.notes_dir
-    model_name = ctx.obj.model_name
+    notes_dir = ctx.obj.input_dir
+    model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
     live_srx(str(notes_dir), model_name, db_location)
 
@@ -110,8 +110,8 @@ def rebuild_embeddings(
     """
     Regenerate the embeddings from scratch, i.e. reindex the notes
     """
-    notes_dir = ctx.obj.notes_dir
-    model_name = ctx.obj.model_name
+    notes_dir = ctx.obj.input_dir
+    model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
     shutil.rmtree(cfg.get_embeddings_location(notes_dir, model_name))
