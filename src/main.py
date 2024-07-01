@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+from dataclasses import dataclass
 from embeddings.build import search as srx
 from embeddings.build import live_search as live_srx
 from embeddings.build import build_embeddings
+import shutil
 import typer
 from typer_annotations import (
     notes_dir_typer,
@@ -12,14 +14,52 @@ from typer_annotations import (
     open_editor,
 )
 from pathlib import Path
-from config import Config
+import config as cfg
 import os
 import toml
 
-cfg = Config()
+
 app = typer.Typer()
 embeddings = typer.Typer()
 app.add_typer(embeddings, name="embeddings")
+
+
+@dataclass
+class EmbeddingsOptions:
+    notes_dir: Path
+    model_name: str
+
+    def __post_init__(self):
+        self.db_location = cfg.get_embeddings_location(self.notes_dir, self.model_name)
+        self.chat_location = cfg.get_chat_dir(self.notes_dir)
+
+    def __repr__(self):
+        return toml.dumps(
+            {
+                "arguments": {
+                    "notes_dir": self.notes_dir,
+                    "embed_model_name": self.model_name,
+                },
+                "config": {
+                    "db": self.db_location,
+                    "chat_location": self.chat_location,
+                },
+            }
+        )
+
+
+@embeddings.callback()
+def embeddings_callback(
+    ctx: typer.Context,
+    notes_dir: notes_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
+    chat_model_name: chat_model_typer = "codestral",
+    embed_model_name: embed_model_typer = "mxbai-embed-large",
+):
+    """
+    A callback function that initializes a singleton object
+    with the required options
+    """
+    ctx.obj = EmbeddingsOptions(notes_dir, embed_model_name)
 
 
 HOME = os.path.expanduser("~")
@@ -86,8 +126,10 @@ def regenerate(
             }
         )
     )
-    os.removedirs(cfg.get_embeddings_location(notes_dir, model_name))
-    build_embeddings(cfg.get_embeddings_location(notes_dir, model_name), str(notes_dir))
+    shutil.rmtree(cfg.get_embeddings_location(notes_dir, model_name))
+    build_embeddings(
+        cfg.get_embeddings_location(notes_dir, model_name), str(notes_dir), model_name
+    )
 
 
 @embeddings.command()
@@ -115,6 +157,7 @@ def update(
 
 @embeddings.command()
 def rag(
+    ctx: typer.Context,
     notes_dir: notes_dir_typer = Path(f"{HOME}/Notes/slipbox"),
     embed_model_name: embed_model_typer = "mxbai-embed-large",
     chat_model_name: embed_model_typer = "codestral",
@@ -122,29 +165,18 @@ def rag(
     """
     Use RAG to generate text from a query
     """
-    print(
-        toml.dumps(
-            {
-                "arguments": {
-                    "notes_dir": notes_dir,
-                    "embed_model_name": embed_model_name,
-                    "chat_model_name": chat_model_name,
-                },
-                "config": {
-                    "db": cfg.get_embeddings_location(notes_dir, embed_model_name),
-                    "chat_location": cfg.get_chat_dir(notes_dir),
-                },
-            }
-        )
-    )
+    print(ctx.obj)
+    
+
 
 @app.command()
 def self_instruct():
     """
-    Generate question/answer pairs from documentation to be used for 
+    Generate question/answer pairs from documentation to be used for
     fine-tuning a model or practice questions etc.
     """
     pass
+
 
 @app.command()
 def rag_questions():
@@ -156,6 +188,7 @@ def rag_questions():
     """
     pass
 
+
 @app.command()
 def summarize():
     """
@@ -163,6 +196,7 @@ def summarize():
     via either mapreduce or recursive clustering
     """
     pass
+
 
 @app.command()
 def chat(
