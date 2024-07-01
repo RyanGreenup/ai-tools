@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from embeddings.build import search as srx
 from embeddings.build import live_search as live_srx
 from embeddings.build import build_embeddings
+from visualize import vis
 from chat import chat as cht
 from config import SYSTEM_MESSAGE
 from datetime import datetime as dt
@@ -23,6 +24,7 @@ import config as cfg
 import os
 import toml
 
+print("quick enough")
 
 app = typer.Typer()
 
@@ -193,6 +195,27 @@ def chat(
         chat_path,
         system_message,
     )
+
+
+@app.command()
+def visualize(ctx: typer.Context, query: str = ""):
+    """
+    Open a visualization of the semantic space of the input data
+    With a scatter plot of the embeddings, hover of the content
+    and a background visualization of the clusters
+
+    TODO allow filtering based on query, no query returns all
+    TODO egui might be good at this?
+    TODO allow returning full articles rather than chunks
+         by averaging embeddings
+    """
+    print(ctx.obj)
+
+    notes_dir = ctx.obj.input_dir
+    model_name = ctx.obj.embed_model_name
+    db_location = ctx.obj.db_location
+
+    vis(db_location, notes_dir, model_name)
 
 
 if __name__ == "__main__":
