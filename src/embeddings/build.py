@@ -87,9 +87,6 @@ def live_search(notes_dir: str, model_name: str, db_location: str):
     Performs the search in a loop asking for user input.
     """
 
-    print(notes_dir)
-    print(db_location)
-
     # Test if the db_location exists
     if not os.path.exists(db_location):
         print(
@@ -105,7 +102,9 @@ def live_search(notes_dir: str, model_name: str, db_location: str):
         #      but this is more robust
         # Query the DB
         results = collection.query(
-            query_embeddings=[get_embedding(transform_query(input("Enter a query: ")), model_name)],
+            query_embeddings=[
+                get_embedding(transform_query(input("Enter a query: ")), model_name)
+            ],
             n_results=n_results,
         )
 
@@ -127,6 +126,6 @@ def live_search(notes_dir: str, model_name: str, db_location: str):
             content = content.replace("\n", "  ⏎  ")
             # Split the content into 80 character chunks
             for i in range(0, len(content), 80):
-                print("\t" + content[i : i + 80])
+                print("\t" + content[i: i + 80])
             print()
             print()
