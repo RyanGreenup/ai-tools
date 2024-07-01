@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 
-from typing import Iterable
-import umap.umap_ as umap  # umap-learn
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-import numpy as np
-from pathlib import Path
-from numpy import ndarray
+from bokeh.layouts import gridplot
+from bokeh.models import HoverTool, ColumnDataSource
+from bokeh.models import LinearColorMapper
+from bokeh.plotting import figure, show, output_file
+from embeddings.build import build_embeddings, initialize_chromadb
 from enum import Enum
 from matplotlib import colors as plt_colors
-from embeddings.build import build_embeddings, initialize_chromadb
+from numpy import ndarray
+from pathlib import Path
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from typing import Iterable
+from markdown import markdown
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy as np
 import os
 import sys
 
@@ -81,6 +86,41 @@ def plot_with_hover(
     plt.show()
 
 
+def bokeh_plot(x, y, clusters, chunks):
+    # Define tools and tooltips
+    TOOLS = "crosshair,pan,wheel_zoom,box_zoom,reset,hover,save"
+    TOOLTIPS = """
+    <div style="width:600px;">
+    @chunks
+    </div>
+    """
+
+    # Create the dataframe
+    color_mapper = LinearColorMapper(
+        palette="Magma256", low=min(clusters), high=max(clusters)
+    )
+    source = {"x": x, "y": y, "chunks": [markdown(c) for c in chunks], "clusters": clusters}
+
+    # Create the figure
+    p = figure(
+        width=1500, height=1000, tooltips=TOOLTIPS, tools=TOOLS, title="Semantic Space"
+    )
+
+    # Create a Scatter plot
+    p.scatter(
+        x="x",
+        y="y",
+        size=20,
+        color={"field": "clusters", "transform": color_mapper},
+        alpha=0.5,
+        source=source,
+    )
+
+    # show the results
+    output_file("/tmp/semantic_space_plot.html")
+    show(p)
+
+
 class DimensionReduction(Enum):
     PCA = "PCA"
     UMAP = "UMAP"
@@ -101,9 +141,11 @@ def dim_reduction(
             x, y = pca_result[:, 0], pca_result[:, 1]
             return x, y
         case DimensionReduction.UMAP:
-            # Perform UMAP dimension reduction
+            # Lazy import
+            from umap.umap_ import UMAP  # umap-learn
+
             # Don't set random state for parallelism
-            reducer = umap.UMAP(n_components=2)
+            reducer = UMAP(n_components=2)
             umap_result = reducer.fit_transform(embeddings)
             x, y = umap_result[:, 0], umap_result[:, 1]
             return x, y
@@ -136,7 +178,8 @@ def vis(db_location: str, notes_dir: Path, model_name: str):
     embeddings = db["embeddings"]
     paths = [d["path"] for d in db["metadatas"]]
     chunks = db["documents"]
-    chunks = [f"# {os.path.basename(p)}\n{c}" for p, c in zip(paths, chunks)]
+    title_paths = [os.path.basename(os.path.splitext(p)[0]).replace("_", "/").replace("-", " ") for p in paths]
+    chunks = [f"# {p}\n{c}" for p, c in zip(title_paths, chunks)]
 
     # Perform KNN clustering
     clusters = cluster(embeddings, 7)
@@ -144,4 +187,19 @@ def vis(db_location: str, notes_dir: Path, model_name: str):
     # Squash
     x, y = dim_reduction(embeddings, DimensionReduction.UMAP)
 
-    plot_with_hover(x, y, clusters, chunks)
+    from bokeh.plotting import figure, show, output_notebook
+    from bokeh.models import HoverTool, ColumnDataSource
+    import pandas as pd
+
+    # Assuming `x`, `y`, and `chunks` are already defined
+    source = pd.DataFrame({'x': x, 'y': y, 'chunks': chunks})
+
+    TOOLTIPS = [("Chunk", "@chunks")]
+
+    p = figure(tooltips=TOOLTIPS)
+    p.circle('x', 'y', source=source)
+
+    output_notebook()
+    show(p)
+    #  plot_with_hover(x, y, clusters, chunks)
+    bokeh_plot(x, y, clusters, chunks)
