@@ -25,8 +25,6 @@ import config as cfg
 import os
 import toml
 
-print("quick enough")
-
 app = typer.Typer()
 
 
@@ -185,6 +183,7 @@ def chat(
     editor: editor = "neovide",
     open_editor: open_editor = False,
     system_message: str = SYSTEM_MESSAGE,
+    context_length: int = None,  # type:ignore  # Typer doesn't support int|None
 ):
     """
     Start a chat and write to a markdown file, optionally open in an editor
@@ -198,6 +197,7 @@ def chat(
         chat_path,
         system_message,
         ctx.obj.ollama_host,
+        context_length,
     )
 
 

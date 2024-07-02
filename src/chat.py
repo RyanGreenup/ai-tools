@@ -96,8 +96,30 @@ class MarkdownChat:
     def __repr__(self):
         return self.dict_to_md_chat()
 
+def increase_model_context(chat_model: str,
+                           context_length: int,
+                           ollama_host: str) -> str:
+    """
+    Creates a new model from an existing model with an alternative context length.
+    """
+    # Create a long context model
+    num_ctx = int(context_length)
+    modelfile = f'''
+    FROM {chat_model}
+    PARAMETER num_ctx {num_ctx}'''
 
-def chat(chat_model: str, chat_path: Path, system_message: str, ollama_host: str):
+    client = ollama.Client(host=ollama_host)
+    chat_model = f"ai_tools/{chat_model}__{num_ctx}"
+    client.create(model=chat_model, modelfile=modelfile)
+    return chat_model
+
+
+def chat(chat_model: str,
+         chat_path: Path,
+         system_message: str,
+         ollama_host: str,
+         context_length: int | None = None
+         ):
     """
     Function to interactively chat with a model.
 
@@ -137,6 +159,10 @@ def chat(chat_model: str, chat_path: Path, system_message: str, ollama_host: str
     md_chat.add_user_message("")
     # Write the chat to the file (we can assume there is yet no file)
     md_chat.write_md_chat()
+
+    # If a context length is specified, create a longer context model
+    if context_length:
+        chat_model = increase_model_context(chat_model, context_length, ollama_host)
 
     continue_chat = True
     while continue_chat:
