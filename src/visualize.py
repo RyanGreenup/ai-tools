@@ -118,6 +118,7 @@ def bokeh_plot(x, y, clusters, chunks):
         color={"field": "clusters", "transform": color_mapper},
         alpha=0.5,
         source=source,
+        legend_group="clusters",
     )
 
     # show the results
