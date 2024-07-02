@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from embeddings.build import search as srx
 from embeddings.build import live_search as live_srx
+from chat import rag as rg
 from embeddings.build import build_embeddings
 from visualize import vis, DimensionReduction
 from chat import chat as cht
@@ -129,11 +130,31 @@ def rebuild_embeddings(
 @app.command()
 def rag(
     ctx: typer.Context,
+    system_message: str = SYSTEM_MESSAGE,
+    context_length: int = None,
+    editor: editor = "neovide",
+    open_editor: open_editor = False,
+    n_docs: int = 5,
 ):
     """
     Use RAG to generate text from a query
     """
+
+    chat_path = Path(os.path.join(ctx.obj.chat_location, f"{date_string()}.md"))
+    if open_editor:
+        subprocess.run([editor, chat_path])
     print(ctx.obj)
+    rg(
+        ctx.obj.chat_model_name,
+        ctx.obj.embed_model_name,
+        ctx.obj.chat_location,
+        ctx.obj.input_dir,
+        ctx.obj.db_location,
+        system_message,
+        ctx.obj.ollama_host,
+        n_docs,
+        context_length,
+    )
 
 
 @app.command()
@@ -203,10 +224,10 @@ def chat(
 
 @app.command()
 def visualize(
-        ctx: typer.Context,
-        query: str = "",
-        dim_reducer: DimensionReduction = DimensionReduction.PCA.value,
-        ):
+    ctx: typer.Context,
+    query: str = "",
+    dim_reducer: DimensionReduction = DimensionReduction.PCA.value,
+):
     """
     Open a visualization of the semantic space of the input data
     With a scatter plot of the embeddings, hover of the content
@@ -224,11 +245,7 @@ def visualize(
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
-    vis(db_location,
-        notes_dir,
-        model_name,
-        dim_reducer,
-        ctx.obj.ollama_host)
+    vis(db_location, notes_dir, model_name, dim_reducer, ctx.obj.ollama_host)
 
 
 if __name__ == "__main__":

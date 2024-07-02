@@ -2,6 +2,9 @@
 
 import ollama
 from pathlib import Path
+from embeddings.build import search
+import os
+from config import date_string
 
 
 class MarkdownChat:
@@ -28,8 +31,8 @@ class MarkdownChat:
     >>> md_chat.read_md_file()
     """
 
-    def __init__(self, filename: Path, data: list[dict[str, str]] | None = None):
-        self.filename: Path = filename
+    def __init__(self, file_dir: Path, data: list[dict[str, str]] | None = None):
+        self.filename: Path = Path(os.path.join(file_dir, date_string() + ".md"))
         self.data = data
         self._roles = ["System", "User", "Assistant"]
 
@@ -87,6 +90,14 @@ class MarkdownChat:
             raise ValueError("No data to add user message")
         self.data.append({"role": "User", "content": message})
 
+    def get_last_message(self) -> str:
+        """
+        Returns the content of the last message
+        """
+        if self.data is None:
+            raise ValueError("No data to add user message")
+        return self.data[-1]["content"]
+
     def write_md_chat(self):
         # First make the directories if needed
         self.filename.parent.mkdir(parents=True, exist_ok=True)
@@ -96,17 +107,18 @@ class MarkdownChat:
     def __repr__(self):
         return self.dict_to_md_chat()
 
-def increase_model_context(chat_model: str,
-                           context_length: int,
-                           ollama_host: str) -> str:
+
+def increase_model_context(
+    chat_model: str, context_length: int, ollama_host: str
+) -> str:
     """
     Creates a new model from an existing model with an alternative context length.
     """
     # Create a long context model
     num_ctx = int(context_length)
-    modelfile = f'''
+    modelfile = f"""
     FROM {chat_model}
-    PARAMETER num_ctx {num_ctx}'''
+    PARAMETER num_ctx {num_ctx}"""
 
     client = ollama.Client(host=ollama_host)
     chat_model = f"ai_tools/{chat_model}__{num_ctx}"
@@ -114,12 +126,13 @@ def increase_model_context(chat_model: str,
     return chat_model
 
 
-def chat(chat_model: str,
-         chat_path: Path,
-         system_message: str,
-         ollama_host: str,
-         context_length: int | None = None
-         ):
+def chat(
+    chat_model: str,
+    chat_path: Path,
+    system_message: str,
+    ollama_host: str,
+    context_length: int | None = None,
+):
     """
     Function to interactively chat with a model.
 
@@ -177,6 +190,96 @@ def chat(chat_model: str,
         # Read the file
         md_chat.read_md_file()
 
+        # Send the chat to ollama
+        client = ollama.Client(host=ollama_host)
+        stream = client.chat(
+            model=chat_model,
+            # messages=[{"role": "user", "content": "Why is the sky blue?"}],
+            messages=md_chat.data,  # type:ignore
+            stream=True,
+        )
+
+        s = ""
+        for chunk in stream:
+            content = chunk["message"]["content"]
+            s += content
+            print(content, end="", flush=True)
+
+        # Add the assistant message to the chat
+        md_chat.add_assistant_message(s)
+
+        # Write the chat
+        md_chat.add_user_message("")
+        md_chat.write_md_chat()
+
+def transform_rag_prompt(question: str, context: str) -> str:
+    return ("You are an assistant for question-answering tasks. Use the "
+            "following pieces of retrieved context to answer the question. "
+            "If you don't know the answer, just say that you don't know.\n"
+            "## Question:\n"
+            f"{question}\n"
+            "## Context:\n"
+            f"{context}\n")
+
+def rag(
+    chat_model: str,
+    embed_model: str,
+    chat_path: Path,
+    input_dir: Path,
+    db_location: Path,
+    system_message: str,
+    ollama_host: str,
+    n_docs: int,
+    context_length: int | None = None,
+):
+
+    # Initialize a chat object
+    md_chat = MarkdownChat(
+        chat_path, data=[{"role": "System", "content": system_message}]
+    )
+    md_chat.add_user_message("")
+    # Write the chat to the file (we can assume there is yet no file)
+    md_chat.write_md_chat()
+
+    # If a context length is specified, create a longer context model
+    if context_length:
+        chat_model = increase_model_context(chat_model, context_length, ollama_host)
+
+    continue_chat = True
+    while continue_chat:
+        # Wait for user
+        out = input(
+            f"Modify \n\t{md_chat.filename}\nas needed and press enter to continue (q to exit): "
+        )
+        if out in ["q", "quit", "exit"]:
+            continue_chat = False
+            return
+
+        # Read the file
+        md_chat.read_md_file()
+
+        # Retrieve the context
+        docs = search(md_chat.get_last_message(),
+                      input_dir,
+                      embed_model,
+                      db_location,
+                      ollama_host,
+                      n_docs,
+        )
+        # Get the first 5 (these are reversed)
+        matched_chunks = docs["chunks"][::-1]
+        matched_chunks = [f"> {m}" for m in matched_chunks]
+        matched_chunks = [m.replace("\n", "\n> ") for m in matched_chunks]
+        matched_paths = docs["paths"][::-1]
+        contexts = [f"### file: {p}\n{c}" for p, c in zip(matched_paths, matched_chunks)]
+        context = "\n\n".join(contexts)
+
+        # Inject these into the chat (Make this a method)
+        prompt = md_chat.data[-1]["content"]
+        md_chat.write_md_chat()
+        # TODO transform function
+        # TODO find a way to include and remove citations
+        md_chat.data[-1]["content"] = transform_rag_prompt(prompt, context)
         # Send the chat to ollama
         client = ollama.Client(host=ollama_host)
         stream = client.chat(

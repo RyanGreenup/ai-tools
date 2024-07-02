@@ -53,6 +53,7 @@ def search(
     model_name: str,
     db_location: str,
     ollama_host: str,
+    n_results: int = 100,
 ) -> dict:
     # Test if the db_location exists
     if not os.path.exists(db_location):
@@ -67,7 +68,7 @@ def search(
     query = transform_query(query)
     results = collection.query(
         query_embeddings=[get_embedding(query, model_name, ollama_host)],
-        n_results=min(100, len(collection.get()["ids"])),
+        n_results=min(n_results, len(collection.get()["ids"])),
     )
 
     # Transform the Results
