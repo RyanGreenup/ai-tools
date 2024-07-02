@@ -2,7 +2,15 @@
 
 ## Installing
 
-TODO, it's managed by poetry I guess?
+First install ollama and pull some models like `phi3` `phi3:mini-128k` and `codestral`, then use Poetry to initialize and run the project:
+
+```sh
+git clone https://github.com/RyanGreenup/ai-tools
+cd ai-tools
+poetry install
+poetry shell
+python src/main.py -n ~/Notes/slipbox live-search
+```
 
 ### Ollama
 
