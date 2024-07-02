@@ -18,6 +18,7 @@ from typer_annotations import (
     editor,
     output_dir_typer,
     open_editor,
+    ollama_host_typer,
 )
 from pathlib import Path
 import config as cfg
@@ -34,6 +35,7 @@ class Options:
     input_dir: Path
     embed_model_name: str
     chat_model_name: str
+    ollama_host: str
 
     def __post_init__(self):
         if not self.input_dir.exists():
@@ -66,12 +68,13 @@ def embeddings_callback(
     input_dir: input_dir_typer = Path(f"{os.path.expanduser('~')}/Notes/slipbox"),
     chat_model_name: chat_model_typer = "phi3",
     embed_model_name: embed_model_typer = "mxbai-embed-large",
+    ollama_host: ollama_host_typer = "http://localhost:11434",
 ):
     """
     A callback function that initializes a singleton object
     with the required options
     """
-    ctx.obj = Options(input_dir, embed_model_name, chat_model_name)
+    ctx.obj = Options(input_dir, embed_model_name, chat_model_name, ollama_host)
 
 
 @app.command()
@@ -86,7 +89,7 @@ def search(
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
-    results = srx(query, str(notes_dir), model_name, db_location)
+    results = srx(query, str(notes_dir), model_name, db_location, ctx.obj.ollama_host)
     # Note this is reversed for terminal output
     paths = results["paths"]
     # Drop Duplicates but preserve order
@@ -107,7 +110,7 @@ def live_search(
     notes_dir = ctx.obj.input_dir
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
-    live_srx(str(notes_dir), model_name, db_location)
+    live_srx(str(notes_dir), model_name, db_location, ctx.obj.ollama_host)
 
 
 @app.command()
@@ -122,7 +125,7 @@ def rebuild_embeddings(
     db_location = ctx.obj.db_location
 
     shutil.rmtree(cfg.get_embeddings_location(notes_dir, model_name))
-    build_embeddings(db_location, str(notes_dir), model_name)
+    build_embeddings(db_location, str(notes_dir), model_name, ctx.obj.ollama_host)
 
 
 @app.command()
@@ -194,6 +197,7 @@ def chat(
         ctx.obj.chat_model_name,
         chat_path,
         system_message,
+        ctx.obj.ollama_host,
     )
 
 
@@ -220,7 +224,11 @@ def visualize(
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
-    vis(db_location, notes_dir, model_name, dim_reducer)
+    vis(db_location,
+        notes_dir,
+        model_name,
+        dim_reducer,
+        ctx.obj.ollama_host)
 
 
 if __name__ == "__main__":

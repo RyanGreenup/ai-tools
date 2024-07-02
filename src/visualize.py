@@ -188,7 +188,8 @@ def cluster(embeddings: ndarray, n_clusters: int) -> ndarray:
 def vis(db_location: str,
         notes_dir: Path,
         model_name: str,
-        dim_reducer: DimensionReduction
+        dim_reducer: DimensionReduction,
+        ollama_host: str,
         ):
     # TODO scale size by pagerank
 
@@ -197,7 +198,7 @@ def vis(db_location: str,
         print(
             f"Database not found at {db_location}, Building a new one", file=sys.stderr
         )
-        collection = build_embeddings(db_location, notes_dir, model_name)
+        collection = build_embeddings(db_location, notes_dir, model_name, ollama_host)
     else:
         collection = initialize_chromadb(db_location)
 

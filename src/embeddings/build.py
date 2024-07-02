@@ -10,8 +10,9 @@ import sys
 import os
 
 
-def get_embedding(text: str, embed_model: str) -> list[float]:
-    response = ollama.embeddings(model=embed_model, prompt=text)
+def get_embedding(text: str, embed_model: str, ollama_host: str) -> list[float]:
+    client = ollama.Client(host=ollama_host)
+    response = client.embeddings(model=embed_model, prompt=text)
     return response["embedding"]
 
 
@@ -25,12 +26,12 @@ def initialize_chromadb(db_location: str) -> chromadb.Collection:
     return collection
 
 
-def build_embeddings(db_location: str, notes_dir: str, embed_model: str) -> Collection:
+def build_embeddings(db_location: str, notes_dir: str, embed_model: str, ollama_host: str) -> Collection:
     collection = initialize_chromadb(db_location)
     docs = get_text_chunks(notes_dir)
     collection.add(
         ids=[str(i) for i in range(len(docs.keys()))],
-        embeddings=[get_embedding(chunk, embed_model) for chunk in tqdm(docs.values())],
+        embeddings=[get_embedding(chunk, embed_model, ollama_host) for chunk in tqdm(docs.values())],
         documents=list(docs.values()),
         metadatas=[{"path": path} for path in docs.keys()],
     )
@@ -51,20 +52,21 @@ def search(
     notes_dir: str,
     model_name: str,
     db_location: str,
+    ollama_host: str,
 ) -> dict:
     # Test if the db_location exists
     if not os.path.exists(db_location):
         print(
             f"Database not found at {db_location}, Building a new one", file=sys.stderr
         )
-        collection = build_embeddings(db_location, notes_dir, model_name)
+        collection = build_embeddings(db_location, notes_dir, model_name, ollama_host)
     else:
         collection = initialize_chromadb(db_location)
 
     # Query the DB (Chroma is L2 by default)
     query = transform_query(query)
     results = collection.query(
-        query_embeddings=[get_embedding(query, model_name)],
+        query_embeddings=[get_embedding(query, model_name, ollama_host)],
         n_results=min(100, len(collection.get()["ids"])),
     )
 
@@ -82,7 +84,7 @@ def search(
     return {"paths": paths, "chunks": chunks, "distances": distances}
 
 
-def live_search(notes_dir: str, model_name: str, db_location: str):
+def live_search(notes_dir: str, model_name: str, db_location: str, ollama_host: str):
     """
     Performs the search in a loop asking for user input.
     """
@@ -92,7 +94,7 @@ def live_search(notes_dir: str, model_name: str, db_location: str):
         print(
             f"Database not found at {db_location}, Building a new one", file=sys.stderr
         )
-        collection = build_embeddings(db_location, notes_dir, model_name)
+        collection = build_embeddings(db_location, notes_dir, model_name, ollama_host)
     else:
         collection = initialize_chromadb(db_location)
 
@@ -103,7 +105,7 @@ def live_search(notes_dir: str, model_name: str, db_location: str):
         # Query the DB
         results = collection.query(
             query_embeddings=[
-                get_embedding(transform_query(input("Enter a query: ")), model_name)
+                get_embedding(transform_query(input("Enter a query: ")), model_name, ollama_host)
             ],
             n_results=n_results,
         )

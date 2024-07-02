@@ -34,3 +34,8 @@ open_editor = Annotated[
     bool,
     typer.Option("--open-editor", "-E", help="Whether to open the editor on the chat"),
 ]
+
+ollama_host_typer = Annotated[
+    str,
+    typer.Option("--ollama-host", "-H", help="URL for the Ollama Host"),
+]
