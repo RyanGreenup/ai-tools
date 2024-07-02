@@ -2,6 +2,7 @@
 
 import ollama
 from pathlib import Path
+from typing import Iterable
 from embeddings.build import search
 import os
 from config import date_string
@@ -212,7 +213,14 @@ def chat(
         md_chat.add_user_message("")
         md_chat.write_md_chat()
 
-def transform_rag_prompt(question: str, context: str) -> str:
+def transform_rag_prompt(question: str, matched_chunks: Iterable[str], matched_paths: Iterable[str]) -> str:
+
+    # Format the chunks and paths
+    matched_chunks = [f"> {m}" for m in matched_chunks]
+    matched_chunks = [m.replace("\n", "\n> ") for m in matched_chunks]
+    contexts = [f"### {p}\n{c}" for p, c in zip(matched_paths, matched_chunks)]
+    context = "\n\n".join(contexts)
+
     return ("You are an assistant for question-answering tasks. Use the "
             "following pieces of retrieved context to answer the question. "
             "If you don't know the answer, just say that you don't know.\n"
@@ -266,20 +274,13 @@ def rag(
                       ollama_host,
                       n_docs,
         )
-        # Get the first 5 (these are reversed)
-        matched_chunks = docs["chunks"][::-1]
-        matched_chunks = [f"> {m}" for m in matched_chunks]
-        matched_chunks = [m.replace("\n", "\n> ") for m in matched_chunks]
-        matched_paths = docs["paths"][::-1]
-        contexts = [f"### file: {p}\n{c}" for p, c in zip(matched_paths, matched_chunks)]
-        context = "\n\n".join(contexts)
 
         # Inject these into the chat (Make this a method)
         prompt = md_chat.data[-1]["content"]
-        md_chat.write_md_chat()
         # TODO transform function
         # TODO find a way to include and remove citations
-        md_chat.data[-1]["content"] = transform_rag_prompt(prompt, context)
+        md_chat.data[-1]["content"] = transform_rag_prompt(prompt, docs["chunks"][::-1], docs["paths"][::-1])
+        md_chat.write_md_chat()
         # Send the chat to ollama
         client = ollama.Client(host=ollama_host)
         stream = client.chat(
