@@ -97,7 +97,7 @@ class MarkdownChat:
         return self.dict_to_md_chat()
 
 
-def chat(chat_model: str, chat_path: Path, system_message: str):
+def chat(chat_model: str, chat_path: Path, system_message: str, ollama_host: str):
     """
     Function to interactively chat with a model.
 
@@ -152,7 +152,8 @@ def chat(chat_model: str, chat_path: Path, system_message: str):
         md_chat.read_md_file()
 
         # Send the chat to ollama
-        stream = ollama.chat(
+        client = ollama.Client(host=ollama_host)
+        stream = client.chat(
             model=chat_model,
             # messages=[{"role": "user", "content": "Why is the sky blue?"}],
             messages=md_chat.data,  # type:ignore
