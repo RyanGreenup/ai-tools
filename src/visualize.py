@@ -219,7 +219,7 @@ def vis(db_location: str,
     clusters = cluster(embeddings, 7)
 
     # Squash
-    x, y = dim_reduction(embeddings, DimensionReduction.UMAP)
+    x, y = dim_reduction(embeddings, dim_reducer)
 
     #  plot_with_hover(x, y, clusters, chunks)
     bokeh_plot(x, y, clusters, chunks, model_name, dim_reducer.value)
