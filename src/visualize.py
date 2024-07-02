@@ -85,7 +85,13 @@ def plot_with_hover(
     plt.show()
 
 
-def bokeh_plot(x, y, clusters, chunks):
+def bokeh_plot(x,
+               y,
+               clusters,
+               chunks,
+               embed_model: str | None = None,
+               dim_reducer: str | None = None
+               ):
     # Define tools and tooltips
     TOOLS = "crosshair,pan,wheel_zoom,box_zoom,reset,hover,save"
     TOOLTIPS = """
@@ -106,8 +112,15 @@ def bokeh_plot(x, y, clusters, chunks):
     }
 
     # Create the figure
+    title = "Semantic Space"
+    if embed_model:
+        title = f"Embedding Space of {embed_model}"
+    else:
+        title = "Semantic Space"
+    if dim_reducer:
+        title = f"{title} via {dim_reducer}"
     p = figure(
-        width=1500, height=1000, tooltips=TOOLTIPS, tools=TOOLS, title="Semantic Space"
+        width=1500, height=1000, tooltips=TOOLTIPS, tools=TOOLS, title=title
     )
 
     # Create a Scatter plot
@@ -209,4 +222,4 @@ def vis(db_location: str,
     x, y = dim_reduction(embeddings, DimensionReduction.UMAP)
 
     #  plot_with_hover(x, y, clusters, chunks)
-    bokeh_plot(x, y, clusters, chunks)
+    bokeh_plot(x, y, clusters, chunks, model_name, dim_reducer.value)
