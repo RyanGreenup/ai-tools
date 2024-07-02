@@ -48,3 +48,27 @@ services:
             - ollama
 ```
 
+
+## Usage
+
+### RAG
+
+First pull down a long context model:
+
+```sh
+zi ollama
+docker compose exec -it ollama bash
+ollama pull phi3:mini-128k
+```
+
+Then run the RAG model:
+
+```sh
+src/main.py \
+    -c "phi3:mini-128k" \
+        rag             \
+            --n-docs=10            \
+            --context-length 16000 \
+            -E
+```
+
