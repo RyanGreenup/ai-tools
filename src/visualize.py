@@ -170,7 +170,7 @@ def dim_reduction(
         case DimensionReduction.TSNE:
                 from sklearn.manifold import TSNE
                 tsne = TSNE(n_components=2)
-                tsne_result = tsne.fit_transform(embeddings)
+                tsne_result = tsne.fit_transform(np.array(embeddings))
                 x, y = tsne_result[:, 0], tsne_result[:, 1]
                 return x, y
         case _:
