@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from embeddings.build import search as srx
 from embeddings.build import live_search as live_srx
 from embeddings.build import build_embeddings
-from visualize import vis
+from visualize import vis, DimensionReduction
 from chat import chat as cht
 from config import SYSTEM_MESSAGE
 from datetime import datetime as dt
@@ -198,7 +198,11 @@ def chat(
 
 
 @app.command()
-def visualize(ctx: typer.Context, query: str = ""):
+def visualize(
+        ctx: typer.Context,
+        query: str = "",
+        dim_reducer: DimensionReduction = DimensionReduction.PCA.value,
+        ):
     """
     Open a visualization of the semantic space of the input data
     With a scatter plot of the embeddings, hover of the content
@@ -208,6 +212,7 @@ def visualize(ctx: typer.Context, query: str = ""):
     TODO egui might be good at this?
     TODO allow returning full articles rather than chunks
          by averaging embeddings
+    TODO allow choosing dim_squash
     """
     print(ctx.obj)
 
@@ -215,7 +220,7 @@ def visualize(ctx: typer.Context, query: str = ""):
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
 
-    vis(db_location, notes_dir, model_name)
+    vis(db_location, notes_dir, model_name, dim_reducer)
 
 
 if __name__ == "__main__":

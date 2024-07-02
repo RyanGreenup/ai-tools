@@ -154,7 +154,11 @@ def dim_reduction(
             x, y = umap_result[:, 0], umap_result[:, 1]
             return x, y
         case DimensionReduction.TSNE:
-            raise NotImplementedError("TSNE is not yet implemented (is slooow)")
+                from sklearn.manifold import TSNE
+                tsne = TSNE(n_components=2)
+                tsne_result = tsne.fit_transform(embeddings)
+                x, y = tsne_result[:, 0], tsne_result[:, 1]
+                return x, y
         case _:
             raise ValueError("Invalid Dimension Reduction Method")
 
@@ -167,7 +171,11 @@ def cluster(embeddings: ndarray, n_clusters: int) -> ndarray:
     return kmeans.fit_predict(embeddings)
 
 
-def vis(db_location: str, notes_dir: Path, model_name: str):
+def vis(db_location: str,
+        notes_dir: Path,
+        model_name: str,
+        dim_reducer: DimensionReduction
+        ):
     # TODO scale size by pagerank
 
     # Get the embeddings and Metadata
@@ -199,19 +207,5 @@ def vis(db_location: str, notes_dir: Path, model_name: str):
     # Squash
     x, y = dim_reduction(embeddings, DimensionReduction.UMAP)
 
-    from bokeh.plotting import figure, show, output_notebook
-    from bokeh.models import HoverTool, ColumnDataSource
-    import pandas as pd
-
-    # Assuming `x`, `y`, and `chunks` are already defined
-    source = pd.DataFrame({"x": x, "y": y, "chunks": chunks})
-
-    TOOLTIPS = [("Chunk", "@chunks")]
-
-    p = figure(tooltips=TOOLTIPS)
-    p.circle("x", "y", source=source)
-
-    output_notebook()
-    show(p)
     #  plot_with_hover(x, y, clusters, chunks)
     bokeh_plot(x, y, clusters, chunks)
