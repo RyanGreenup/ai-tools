@@ -8,8 +8,11 @@ First install ollama and pull some models like `phi3` `phi3:mini-128k` and `code
 git clone https://github.com/RyanGreenup/ai-tools
 cd ai-tools
 poetry install
-poetry shell
-python src/main.py -n ~/Notes/slipbox live-search
+poetry run src/main.py -n ~/Notes/slipbox live-search
+# Or from any directory
+dir=$(pwd)
+cd /tmp/
+poetry run -C "${dir}" /home/ryan/.local/scripts/python/ai-tools/src/main.py  --help
 ```
 
 ### Ollama
