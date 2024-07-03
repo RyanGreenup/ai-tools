@@ -132,7 +132,7 @@ def rebuild_embeddings(
 def rag(
     ctx: typer.Context,
     system_message: str = SYSTEM_MESSAGE,
-    context_length: int = None,
+    context_length: int = None,  # type:ignore  # Typer doesn't support int|None
     editor: editor = "neovide",
     open_editor: open_editor = False,
     n_docs: int = 5,
