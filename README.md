@@ -3,13 +3,38 @@ CLI in python that uses ollama to provide a basic workflow for search, chat, rag
 
 Read [the documentation](./docs/index.md) for more information.
 ## Installation
+
+### Poetry
 Install with poetry:
 
 ```sh
 git clone https://github.com/RyanGreenup/ai-tools
 cd ai-tools
 poetry install
+
+# In the directory
 poetry run src/main.py -n ~/Notes/slipbox live-search
+
+# Anywhere
+dir=$(pwd)
+cd /tmp/
+poetry run -C "${dir}" /home/ryan/.local/scripts/python/ai-tools/src/main.py  --help
+```
+
+Consider creating a script, e.g. =~/.local/bin/ait:
+
+``` sh
+#!/bin/sh
+dir="$HOME/.local/scripts/python/ai-tools/"
+poetry run -C "${dir}" "${dir}"/src/main.py ${@:-}
+```
+
+### Virtual environment
+
+```sh
+python -m venv venv
+source venv/bin/activate
+
 ```
 ## Screenshots
 
