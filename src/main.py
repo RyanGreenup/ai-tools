@@ -45,6 +45,7 @@ class Options:
             self.input_dir, self.embed_model_name
         )
         self.chat_location = cfg.get_chat_dir(self.input_dir)
+        self.chat_location_file = cfg.get_chat_file(self.input_dir)
 
     def __repr__(self):
         return toml.dumps(
@@ -140,14 +141,17 @@ def rag(
     Use RAG to generate text from a query
     """
 
-    chat_path = Path(os.path.join(ctx.obj.chat_location, f"{date_string()}.md"))
+    chat_file: Path = ctx.obj.chat_location_file
     if open_editor:
-        subprocess.run([editor, chat_path])
+        # TODO this needs to be the file and note the directory
+        chat_file.mkdir(parents=True, exist_ok=True)
+        chat_file.touch()
+        subprocess.run([editor, chat_file])
     print(ctx.obj)
     rg(
         ctx.obj.chat_model_name,
         ctx.obj.embed_model_name,
-        ctx.obj.chat_location,
+        ctx.obj.chat_location_file,
         ctx.obj.input_dir,
         ctx.obj.db_location,
         system_message,

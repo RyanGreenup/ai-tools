@@ -32,8 +32,8 @@ class MarkdownChat:
     >>> md_chat.read_md_file()
     """
 
-    def __init__(self, file_dir: Path, data: list[dict[str, str]] | None = None):
-        self.filename: Path = Path(os.path.join(file_dir, date_string() + ".md"))
+    def __init__(self, filename: Path, data: list[dict[str, str]] | None = None):
+        self.filename = filename
         self.data = data
         self._roles = ["System", "User", "Assistant"]
 

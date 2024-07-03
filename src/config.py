@@ -47,6 +47,11 @@ def get_rag_location(notes_dir: Path, model_name: str) -> str:
     return db_path
 
 
+def get_chat_file(notes_dir: Path | None = None) -> Path:
+    dir = get_chat_dir(notes_dir)
+    return Path(os.path.join(dir, date_string() + ".md"))
+
+
 def get_chat_dir(notes_dir: Path | None = None) -> Path:
     """Get a directory to write chats to.
 
@@ -64,7 +69,10 @@ def get_chat_dir(notes_dir: Path | None = None) -> Path:
     # Handle Optional RAG Directory
     if notes_dir:
         dir_n = (
-            str(notes_dir).replace(HOME, "").replace(os.sep, "", 1).replace(os.sep, "--")
+            str(notes_dir)
+            .replace(HOME, "")
+            .replace(os.sep, "", 1)
+            .replace(os.sep, "--")
         )
         dir_n = f"rag/{dir_n}"
     else:
