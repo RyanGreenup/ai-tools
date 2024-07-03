@@ -1,0 +1,151 @@
+#+title: Usage
+
+* Overview
+The CLI is provides a series of options and commands, commands may have suboptions. For example =src/main.py --help= will provide:
+
+#+begin_src
+╭─ Options ─────────────────────────────────────────────────────────────────────
+│ --notes-dir           -n      PATH  Input Path to notes, docs etc. [default: /home/ryan/Notes/slipbox]
+│ --chat-model          -c      TEXT  The model name for text generation using ollama
+│ --embed-model         -e      TEXT  The model name for embedding using ollama string
+│ --ollama-host         -H      TEXT  URL for the Ollama Host [default: http://localhost:11434]
+│ --install-completion                Install completion for the current shell.
+│ --show-completion                   Show completion for the current shell, to copy
+│ --help                              Show this message and exit.
+
+╭─ Commands ────────────────────────────────────────────────────────────────────
+│ chat                 Start a chat and write to a markdown file, optionally open in an editor
+│ live-search          Perform a semantic search through notes and generate embeddings if needed
+│ rag                  Use RAG to generate text from a query
+│ rag-questions        Loop through questions in a markdown file and generate answers using rag
+│ rebuild-embeddings   Regenerate the embeddings from scratch, i.e. reindex the notes
+│ search               Perform a semantic search through notes and generate embeddings if needed
+│ self-instruct        Generate question/answer pairs from documentation to be used for fine-tuning a model or practice
+│ summarize            Summarize a collection of documents using a model via either mapreduce or recursive clustering
+│ visualize            Open a visualization of the semantic space of the input data With a scatter plot of the embedding
+
+#+end_src
+
+* Chat
+** Workflow
+
+The chat command will create and watch a markdown file, the invisioned workflow is:
+
+1. Run this a scratchpad or =tmux= with the =-E= option to open neovide (or specify another editor with, e.g. ~-e=nvim=)
+2. Edit the chat
+3. Bring up the scratchpad and hit enter to send it to ollama
+
+The re
+
+edit the markdown file and hit enter in the cli
+** Streaming
+The response will stream to the terminal but it does not yet write to the buffer as it's streaming.
+
+In the future an interrupt (=C-c=) will stop the stream and write to the buffer.
+* RAG
+:PROPERTIES:
+:CUSTOM_ID: rag
+:END:
+** Overview
+Rag works much the same as chat, however, context is injected into the chat using an embeddings search (see [[#search][Search]])
+** Example
+Clone some documentation, e.g. and start the RAG
+
+#+begin_src bash
+cd /tmp
+git clone https://github.com/pytorch/pytorch --depth=1
+~/.local/scripts/python/ai-tools/src/main.py -n pytorch/docs -c "phi3:mini-128k" rag --n-docs=10 -E --context-length 16000
+#+end_src
+
+Provide a question to the chat that will match documentation and produced the desired output:
+
+#+begin_src markdown
+# System
+You are a helpful AI assistant
+# User
+Show how to use a dataloader in pytorch by writing a minimum working example.
+#+end_src
+
+And the output should look something like this:
+
+#+begin_src markdown
+To demonstrate a minimum working example of using `DataLoader` in PyTorch, let's consider loading data from a custom dataset that simulates simple numerical samples (e.g., sequences) and uses DataLoader to batch these into mini-batches for efficient processing during training or inference tasks. This example will showcase how to create a basic DataLoader pipeline by combining a PyTorch `Dataset` object with the DataLoader itself, ensuring that each sample is preprocessed before being fed into your model's forward method.
+
+First, ensure you have PyTorch installed:
+
+```python
+pip install torch torchvision  # if not already available
+```
+
+Now, let's create a simple dataset and DataLoader example:
+
+```python
+import torch
+from torch.utils.data import Dataset, DataLoader
+import numpy as np
+
+# Define a custom Dataset class that simulates numerical samples for each data point
+class CustomDataset(Dataset):
+    def __init__(self, num_samples=1000):
+        self.num_samples = num_samples
+
+    def __len__(self):
+        return self.num_samples
+
+    def __getitem__(self, idx):
+        # Simulate a dataset where each sample is a sequence of numbers; for simplicity, let's generate random sequences
+        seq_length = 10
+        data = np.random.randint(0, 256, size=(self.num_samples, seq_length)).astype('uint8') # Random values between 0 and 255 for each sample sequence
+        return torch.tensor(data, dtype=torch.float32) / 255.0  # Normalize pixel values (for a simple example, assuming binary images)
+
+# Instantiate the dataset with a specified number of samples
+dataset = CustomDataset()
+
+# Define batch size and shuffle option for DataLoader
+batch_size = 32
+shuffle = True
+
+# Create a DataLoader that takes in your custom Dataset object, specifying batch size and whether to shuffle the data
+dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle)
+
+# Iterate through the DataLoader to access mini-batches of data
+for i, samples in enumerate(dataloader):
+    print("Batch {}".format(i+1))
+
+    # Each 'samples' is a tensor containing batch_size elements. For this simple example, each element is a 2D float32 tensor of shape (batch_size, seq_length).
+    for sample in samples:
+        print('Sample shape:', sample.shape)  # Example output: torch.Size([32, 10])
+
+        # Assuming we have a simple model that expects normalized values as input and doesn't require preprocessing before forward pass
+        # batch_input = dataloader[i % len(dataloader)].unsqueeze(-1)  # Unsqueeze to make the sample dimension available for neural network models expecting a single channel (like image data).
+
+        # Forward pass through your model. In real applications, this would be replaced with actual model logic.
+        output = self.model(batch_input)  # This is just placeholder code. Replace it with your model's forward function.
+        print('Model output shape:', output.shape)
+
+        # Here you would typically have some loss computation and backward pass but we'll skip that for this basic example.
+```
+
+This script demonstrates how to use PyTorch's `DataLoader` with a custom dataset, showing its simplicity and utility in batching data for model input, crucial for efficient neural network training or inference operations. Note that real-world datasets would require additional steps such as preprocessing (e.g., image transformations) before using the DataLoader.
+#+end_src
+* Search
+:PROPERTIES:
+:CUSTOM_ID: search
+:END:
+** Overview
+Embeds documents and a query into an embedding space, then returns the closest documents using the $\mathcal{L}_2$ norm.
+* Live Search
+** Overview
+Searches the documents in a loop and returns some context of the matched documents (similar to searching on Mediawiki).
+** Workflow
+The invisioned workflow is to run this in the integrated terminal of VSCode or Neovim and then open the file name with =Ctrl+LMB= or =gf= respectively.
+* Visualize
+:PROPERTIES:
+:CUSTOM_ID: visualize
+:END:
+** Overview
+Produces a visualization of the embedding space reduced to 2 dimensions using PCA, Umap or t-SNE. Hovering over the scatterplot will preview the document.
+* Rebuild Embeddings
+Update the cached embeddings for use with [[#Search][Search]], [[#Visualize][Visualize]], [[#RAG][RAG]]
+
+This must be run every time a document in the corpus is modified.

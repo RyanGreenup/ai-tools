@@ -1,0 +1,85 @@
+#+title: Installation
+
+* Overview
+
+Installation requires:
+
+1. Installing this python module with =poetry=
+2. Installiing Ollama
+   1. Pulling Models
+
+* Installing this library
+
+#+begin_src bash
+# Clone the repository
+git clone https://github.com/RyanGreenup/ai-tools
+cd ai-tools
+# Install dependencies
+poetry install
+# Run the Tool
+poetry run src/main.py -n ~/Notes/slipbox live-search
+# Or from any directory
+dir=$(pwd)
+cd /tmp/
+poetry run -C "${dir}" /home/ryan/.local/scripts/python/ai-tools/src/main.py  --help
+#+end_src
+
+
+* Installing Ollama
+** Overview
+If ollama is not already configured, use the following =docker-compose.yml= and then:
+
+#+begin_src bash
+# Start the container
+docker compose up -d
+# Check the logs for any issues
+docker compose logs -f
+#+end_src
+
+** Docker Compose
+
+The following docker compose is adapted from [fn:1] [fn:2]:
+
+#+begin_src yaml
+version: '3.9'
+services:
+    ollama:
+        restart: unless-stopped
+        image: ollama/ollama
+        container_name: ollama
+        ports:
+            - '11434:11434'
+        volumes:
+            - './data:/root/.ollama'
+        deploy:
+            resources:
+              reservations:
+                devices:
+                  - driver: nvidia
+                    device_ids: ['0', '1']
+                 #  device_ids: ['0']
+                    capabilities: [gpu]
+
+      # Optionally include Open-WebUI
+    open-webui:
+        image: 'ghcr.io/open-webui/open-webui:main'
+        restart: always
+        container_name: open-webui
+        volumes:
+            - './data_open-webui:/app/backend/data'
+# Uncomment this for external ollama
+#       environment:
+#           - 'OLLAMA_BASE_URL=https://example.com'
+# Comment or uncomment this for locally hosted ollama
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '3000:8080'
+        depends_on:
+            - ollama
+#+end_src
+
+* Footnotes
+
+[fn:2] [[https://github.com/ollama/ollama][GitHub - ollama/ollama: Get up and running with Llama 3, Mistral, Gemma 2, an...]]
+[fn:1] [[https://docs.openwebui.com/][🏡 Home | Open WebUI]]
