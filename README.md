@@ -1,10 +1,8 @@
 # AI Tools
-AI Tools for ollama that provide a basic workflow for search, chat, rag and visualization.
-
-Installi
+CLI in python that uses ollama to provide a basic workflow for search, chat, rag and visualization of docs and notes. I use this primarily for search and as an alternative to [open-webui](https://docs.openwebui.com/), so I don't have to leave my editor.
 
 Read [the documentation](./docs/index.md) for more information.
-
+## Installation
 Install with poetry:
 
 ```sh
@@ -13,9 +11,6 @@ cd ai-tools
 poetry install
 poetry run src/main.py -n ~/Notes/slipbox live-search
 ```
-
-This tool provides a simple way to chat with ollama in any editor, search notes using semantic space embeddings and visualize the semantic distribution of notes.
-
 ## Screenshots
 
 ### CLI
