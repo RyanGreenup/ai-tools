@@ -4,18 +4,14 @@ from pathlib import Path
 import os
 import toml
 from datetime import datetime as dt
+import yaml
 
 
 HOME = os.path.expanduser("~")
 
 
 def get_project_name() -> str:
-    file_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "../pyproject.toml")
-    )
-    with open(file_path, "r") as f:
-        data = toml.load(f)
-    return data["tool"]["poetry"]["name"]
+    return "ai-tools"
 
 
 def get_embeddings_location(notes_dir: Path, model_name: str) -> str:
