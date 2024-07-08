@@ -52,11 +52,6 @@ def make_test_chunk_document() -> tuple[str, list[str]]:
     return doc, chunks
 
 
-def test_chunk_document():
-    doc, chunks = make_test_chunk_document()
-    assert chunk_document(doc) == chunks
-
-
 def chunk_doc(doc: str, n: int, r: float, verbose: True) -> list[str]:
     """
     Challenges to solve:

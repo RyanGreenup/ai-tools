@@ -4,7 +4,7 @@ from bokeh.layouts import gridplot
 from bokeh.models import HoverTool, ColumnDataSource
 from bokeh.models import LinearColorMapper
 from bokeh.plotting import figure, show, output_file
-from embeddings.build import build_embeddings, initialize_chromadb
+from embeddings_build import build_embeddings, initialize_chromadb
 from enum import Enum
 from matplotlib import colors as plt_colors
 from numpy import ndarray

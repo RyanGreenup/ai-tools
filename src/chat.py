@@ -3,9 +3,7 @@
 import ollama
 from pathlib import Path
 from typing import Iterable
-from embeddings.build import search
-import os
-from config import date_string
+from embeddings_build import search
 
 
 class MarkdownChat:

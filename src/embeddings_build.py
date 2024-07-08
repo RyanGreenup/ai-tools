@@ -2,7 +2,7 @@ from langchain_core.documents.base import Document
 from chromadb import Settings
 import ollama
 import chromadb
-from embeddings.text_splitters import get_text_chunks
+from text_splitters import get_text_chunks
 
 from tqdm import tqdm
 from chromadb.api.models.Collection import Collection

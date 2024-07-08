@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from dataclasses import dataclass
-from embeddings.build import search as srx
-from embeddings.build import live_search as live_srx
+from embeddings_build import search as srx
+from embeddings_build import live_search as live_srx
 from chat import rag as rg
-from embeddings.build import build_embeddings
+from embeddings_build import build_embeddings
 from visualize import vis, DimensionReduction
 from chat import chat as cht
 from config import SYSTEM_MESSAGE
