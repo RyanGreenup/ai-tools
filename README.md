@@ -4,6 +4,17 @@ CLI in python that uses ollama to provide a basic workflow for search, chat, rag
 Read [the documentation](./docs/index.md) for more information.
 ## Installation
 
+### pipx
+
+```sh
+cd $(mktemp -d)
+git clone https://github.com/RyanGreenup/ai-tools
+cd ai-tools
+pipx install .
+ai-tools --help
+```
+
+
 ### Poetry
 Install with poetry:
 
@@ -32,8 +43,12 @@ poetry run -C "${dir}" "${dir}"/src/main.py ${@:-}
 ### Virtual environment
 
 ```sh
+git clone https://github.com/RyanGreenup/ai-tools
+cd ai-tools
 python -m venv venv
 source venv/bin/activate
+pip install .
+python src/main.py --help
 
 ```
 ## Screenshots
