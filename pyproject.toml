@@ -4,6 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["ryan <exogenesis@protonmail.com>"]
 readme = "README.md"
+packages = [ {include = "*", from="src"} ]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -29,5 +30,8 @@ basedpyright = "^1.13.1"
 ptpython = "^3.0.27"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "src"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+ai-tools = "main:app"
