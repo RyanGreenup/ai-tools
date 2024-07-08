@@ -7,11 +7,7 @@ Read [the documentation](./docs/index.md) for more information.
 ### pipx
 
 ```sh
-cd $(mktemp -d)
-git clone https://github.com/RyanGreenup/ai-tools
-cd ai-tools
-pipx install .
-ai-tools --help
+pipx install "git+https://github.com/RyanGreenup/ai-tools"
 ```
 
 
