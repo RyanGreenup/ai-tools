@@ -23,6 +23,7 @@ pyqt6 = "^6.7.0"
 bokeh = "^3.4.2"
 
 
+psutil = "^6.0.0"
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.26.0"
 jupyter = "^1.0.0"
