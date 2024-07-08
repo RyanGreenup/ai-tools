@@ -25,6 +25,19 @@ The CLI is provides a series of options and commands, commands may have suboptio
 │ visualize            Open a visualization of the semantic space of the input data With a scatter plot of the embedding
 
 #+end_src
+* Synchronise Embeddings
+The embeddings are cached under =~/.cache/ai-tools=, these can be synchronised between devices without a GPU, e.g. laptop:
+
+#+begin_src bash
+# On the laptop
+gpu_host=192.168.1.111
+
+# Rebuild embeddings on remote machine
+ssh user@${gpu_host} ai-tools rebuild-embeddings
+
+# Copy them over
+rsync -avh --delete ${gpu_host}:.cache/ai-tools ~/.cache/
+#+end_src
 
 * Chat
 ** Workflow

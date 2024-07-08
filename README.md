@@ -1,7 +1,7 @@
 # AI Tools
 CLI in python that uses ollama to provide a basic workflow for search, chat, rag and visualization of docs and notes. I use this primarily for search and as an alternative to [open-webui](https://docs.openwebui.com/), so I don't have to leave my editor.
 
-Read [the documentation](./docs/index.md) for more information.
+Read [the documentation](./docs/index.org) for more information.
 ## Installation
 
 ### pipx
