@@ -3,6 +3,8 @@ from chromadb import Settings
 import ollama
 import chromadb
 from text_splitters import get_text_chunks
+import tempfile
+import subprocess
 
 from tqdm import tqdm
 from chromadb.api.models.Collection import Collection
@@ -26,12 +28,17 @@ def initialize_chromadb(db_location: str) -> chromadb.Collection:
     return collection
 
 
-def build_embeddings(db_location: str, notes_dir: str, embed_model: str, ollama_host: str) -> Collection:
+def build_embeddings(
+    db_location: str, notes_dir: str, embed_model: str, ollama_host: str
+) -> Collection:
     collection = initialize_chromadb(db_location)
     docs = get_text_chunks(notes_dir)
     collection.add(
         ids=[str(i) for i in range(len(docs.keys()))],
-        embeddings=[get_embedding(chunk, embed_model, ollama_host) for chunk in tqdm(docs.values())],
+        embeddings=[
+            get_embedding(chunk, embed_model, ollama_host)
+            for chunk in tqdm(docs.values())
+        ],
         documents=list(docs.values()),
         metadatas=[{"path": path} for path in docs.keys()],
     )
@@ -85,9 +92,21 @@ def search(
     return {"paths": paths, "chunks": chunks, "distances": distances}
 
 
-def live_search(notes_dir: str, model_name: str, db_location: str, ollama_host: str):
+def live_search(
+    notes_dir: str,
+    model_name: str,
+    db_location: str,
+    ollama_host: str,
+    fzf: bool = True,
+    editor: str | None = None,
+):
     """
     Performs the search in a loop asking for user input.
+
+    Args:
+
+        fzf: bool Whether to use fzf for previewing the results else print to stdout
+        editor: str | None The editor to use for opening the file (only used with fzf), else prints to stdout
     """
 
     # Test if the db_location exists
@@ -106,7 +125,9 @@ def live_search(notes_dir: str, model_name: str, db_location: str, ollama_host: 
         # Query the DB
         results = collection.query(
             query_embeddings=[
-                get_embedding(transform_query(input("Enter a query: ")), model_name, ollama_host)
+                get_embedding(
+                    transform_query(input("Enter a query: ")), model_name, ollama_host
+                )
             ],
             n_results=n_results,
         )
@@ -121,14 +142,34 @@ def live_search(notes_dir: str, model_name: str, db_location: str, ollama_host: 
         chunks.reverse()
         distances.reverse()
 
-        # Print the results
-        for p, content in zip(paths, chunks):
-            print(p)
-            print("-----------------------------------")
-            # Could I use bat or highlight here somehow?
-            content = content.replace("\n", "  ⏎  ")
-            # Split the content into 80 character chunks
-            for i in range(0, len(content), 80):
-                print("\t" + content[i: i + 80])
-            print()
-            print()
+        path_map = dict()
+        if fzf:
+            # Create a temporary directoy
+            with tempfile.TemporaryDirectory() as tmpdir:
+                for i, (p, content) in enumerate(zip(paths, chunks)):
+                    temp_p = f"{i:03}_" + os.path.basename(p)
+                    path_map[temp_p] = p
+                    with open(os.path.join(tmpdir, temp_p), "w") as f:
+                        f.write(content)
+
+                out = subprocess.run(
+                    ["fzf", "--preview", "bat {} --color=always"],
+                    cwd=tmpdir,
+                    stdout=subprocess.PIPE,
+                )
+                out = out.stdout.decode().strip()
+                if editor:
+                    subprocess.run([editor, path_map[out]])
+                print(out)
+        else:
+            # Print the results
+            for p, content in zip(paths, chunks):
+                print(p)
+                print("-----------------------------------")
+                # Could I use bat or highlight here somehow?
+                content = content.replace("\n", "  ⏎  ")
+                # Split the content into 80 character chunks
+                for i in range(0, len(content), 80):
+                    print("\t" + content[i : i + 80])
+                print()
+                print()

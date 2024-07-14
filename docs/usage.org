@@ -152,6 +152,23 @@ Embeds documents and a query into an embedding space, then returns the closest d
 Searches the documents in a loop and returns some context of the matched documents (similar to searching on Mediawiki).
 ** Workflow
 The invisioned workflow is to run this in the integrated terminal of VSCode or Neovim and then open the file name with =Ctrl+LMB= or =gf= respectively.
+
+e.g. from the vscode terminal:
+
+#+begin_src bash
+ai-tools live-search --fzf --editor "code"
+ai-tools live-search --fzf --editor "nvim"
+#+end_src
+
+or more generally
+
+#+begin_src bash
+ai-tools live-search --fzf
+# This then right click
+ai-tools live-search
+#+end_src
+
+
 * Visualize
 :PROPERTIES:
 :CUSTOM_ID: visualize

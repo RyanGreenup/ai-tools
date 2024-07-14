@@ -100,6 +100,8 @@ def search(
 @app.command()
 def live_search(
     ctx: typer.Context,
+    editor: str = None,  # type:ignore  # Typer doesn't support None
+    fzf: bool = True,
 ):
     """
     Perform a semantic search through notes and generate embeddings if needed
@@ -110,7 +112,14 @@ def live_search(
     notes_dir = ctx.obj.input_dir
     model_name = ctx.obj.embed_model_name
     db_location = ctx.obj.db_location
-    live_srx(str(notes_dir), model_name, db_location, ctx.obj.ollama_host)
+    live_srx(
+        str(notes_dir),
+        model_name,
+        db_location,
+        ctx.obj.ollama_host,
+        fzf=fzf,
+        editor=editor,
+    )
 
 
 @app.command()
