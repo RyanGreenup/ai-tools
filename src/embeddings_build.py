@@ -137,10 +137,6 @@ def live_search(
         paths = [d["path"] for d in list_of_dicts]
         chunks = results["documents"][0]
         distances = results["distances"][0]
-        # Reverse for terminal use
-        paths.reverse()
-        chunks.reverse()
-        distances.reverse()
 
         path_map = dict()
         if fzf:
@@ -162,6 +158,11 @@ def live_search(
                     subprocess.run([editor, path_map[out]])
                 print(out)
         else:
+            # Reverse for terminal use
+            paths.reverse()
+            chunks.reverse()
+            distances.reverse()
+
             # Print the results
             for p, content in zip(paths, chunks):
                 print(p)
