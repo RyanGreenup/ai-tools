@@ -6,6 +6,7 @@ from chat import rag as rg
 from embeddings_build import build_embeddings
 from visualize import vis, DimensionReduction
 from chat import chat as cht
+from chat import math_completion as mth_cmp
 from config import SYSTEM_MESSAGE
 from datetime import datetime as dt
 from config import date_string
@@ -259,6 +260,22 @@ def visualize(
     db_location = ctx.obj.db_location
 
     vis(db_location, notes_dir, model_name, dim_reducer, ctx.obj.ollama_host)
+
+
+@app.command()
+def math(
+    ctx: typer.Context,
+    query: str,
+):
+    """
+    Takes a prompt for a mathematical expression and returns the latex for it.
+    """
+
+    mth_cmp(
+        query,
+        ctx.obj.chat_model_name,
+        ctx.obj.ollama_host,
+    )
 
 
 if __name__ == "__main__":

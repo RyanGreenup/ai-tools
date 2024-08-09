@@ -211,21 +211,88 @@ def chat(
         md_chat.add_user_message("")
         md_chat.write_md_chat()
 
-def transform_rag_prompt(question: str, matched_chunks: Iterable[str], matched_paths: Iterable[str]) -> str:
 
+def completion(
+    chat_model: str,
+    messages: list[dict[str, str]],
+    ollama_host: str,
+    context_length: int | None = None,
+    verbose: bool = True,
+) -> str:
+    # If a context length is specified, create a longer context model
+    if context_length:
+        chat_model = increase_model_context(chat_model, context_length, ollama_host)
+
+    # Send the chat to ollama
+    client = ollama.Client(host=ollama_host)
+    stream = client.chat(
+        model=chat_model,
+        # messages=[{"role": "user", "content": "Why is the sky blue?"}],
+        messages=messages,  # type:ignore
+        stream=True,
+    )
+
+    s = ""
+    for chunk in stream:
+        content = chunk["message"]["content"]
+        s += content
+        if verbose:
+            print(content, end="", flush=True)
+
+    return s
+
+
+def math_completion(
+    query: str,
+    chat_model: str,
+    ollama_host: str,
+):
+    sys_message = "You are a math writer. You will be given context and a description and you will respond with the katex markdown output."
+    messages = [
+            {"role": "system", "content": sys_message},
+        {"role": "user", "content": "integral of 5x"},
+        {"role": "assistant", "content": r"\int 5x \, {\rm d}x"},
+        {"role": "user", "content": "derivative of sin x"},
+        {"role": "assistant", "content": r"\frac{d}{dx}(\sin(x))"},
+        {"role": "user", "content": "matrix from 1 to 4"},
+        {"role": "assistant", "content": r"$\begin{bmatrix}\n 1 \\\n 2 \\\n 3 \\\n 4\n \end{bmatrix}$"},
+        {"role": "user", "content": "sum of natural numbers"},
+        {"role": "assistant", "content": r"$\sum^n_{i=1} \left[ \frac{n(n+1)}{2} \right]$"},
+        {"role": "user", "content": "partial derivatives of sin xy"},
+        {"role": "assistant", "content": r"$\left< \frac{\partial}{\partial x}\left( \sin (xy) \right), \frac{\partial}{\partial y}\left( \sin (x) \right)\right>$"},
+        {"role": "user", "content": "sum of ci*vi from i=1 to m"},
+        {"role": "assistant", "content": r"$\sum^{m}_{i=1} \left[ c_{i}v_{i} \right]$"},
+        {"role": "user", "content": "sum of ci*qi from i=1 to m"},
+        {"role": "assistant", "content": r"$\sum^{m}_{i=1} \left[ c_{i}q_{i} \right]$"},
+        {"role": "user", "content": "c1 5v1 + c2 5v2 + sum(ci*vi) from i=3 to m, v is a vector so bold it."},
+        {"role": "assistant", "content": r"$c_{1}\mathbf{5v}_{1} + c_{2}\mathbf{5v}_{2} + \sum^{m}_{i=3} \left[ c_{i}\mathbf{v}_{i} \right]$"},
+        {"role": "user", "content": "set of vectors v1 to v4, w not in span of v1 to v4"},
+        {"role": "assistant", "content": r" $\mathbf{V} = \{\mathbf{v}_1,\mathbf{v}_2,\mathbf{v}_3,\mathbf{v}_4\} , \, \mathbf{w} \notin \text{Span}(\mathbf{V})$"},
+        {"role": "user", "content": query},
+    ]
+
+    completion(chat_model, messages, ollama_host)
+
+
+def transform_rag_prompt(
+    question: str, matched_chunks: Iterable[str], matched_paths: Iterable[str]
+) -> str:
     # Format the chunks and paths
     matched_chunks = [f"> {m}" for m in matched_chunks]
     matched_chunks = [m.replace("\n", "\n> ") for m in matched_chunks]
     contexts = [f"### {p}\n{c}" for p, c in zip(matched_paths, matched_chunks)]
     context = "\n\n".join(contexts)
 
-    return ("You are an assistant for question-answering tasks. Use the "
-            "following pieces of retrieved context to answer the question. "
-            "If you don't know the answer, just say that you don't know.\n"
-            "## Question:\n"
-            f"{question}\n"
-            "## Context:\n"
-            f"{context}\n")
+    return (
+        "You are an assistant for question-answering tasks. Use the "
+        "following pieces of retrieved context to answer the question. "
+        "If you don't know the answer, just say that you don't know.\n"
+        "## Question:\n"
+        f"{question}\n"
+        "## Context:\n"
+        f"{context}\n"
+    )
+
 
 def rag(
     chat_model: str,
@@ -238,7 +305,6 @@ def rag(
     n_docs: int,
     context_length: int | None = None,
 ):
-
     # Initialize a chat object
     md_chat = MarkdownChat(
         chat_path, data=[{"role": "System", "content": system_message}]
@@ -265,19 +331,22 @@ def rag(
         md_chat.read_md_file()
 
         # Retrieve the context
-        docs = search(md_chat.get_last_message(),
-                      input_dir,
-                      embed_model,
-                      db_location,
-                      ollama_host,
-                      n_docs,
+        docs = search(
+            md_chat.get_last_message(),
+            input_dir,
+            embed_model,
+            db_location,
+            ollama_host,
+            n_docs,
         )
 
         # Inject these into the chat (Make this a method)
         prompt = md_chat.data[-1]["content"]
         # TODO transform function
         # TODO find a way to include and remove citations
-        md_chat.data[-1]["content"] = transform_rag_prompt(prompt, docs["chunks"][::-1], docs["paths"][::-1])
+        md_chat.data[-1]["content"] = transform_rag_prompt(
+            prompt, docs["chunks"][::-1], docs["paths"][::-1]
+        )
         md_chat.write_md_chat()
         # Send the chat to ollama
         client = ollama.Client(host=ollama_host)
