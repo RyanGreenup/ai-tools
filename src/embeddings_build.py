@@ -10,6 +10,9 @@ from tqdm import tqdm
 from chromadb.api.models.Collection import Collection
 import sys
 import os
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.padding import Padding
 
 
 def get_embedding(text: str, embed_model: str, ollama_host: str) -> list[float]:
@@ -140,11 +143,19 @@ def live_search(
 
         path_map = dict()
         if fzf:
+            # TODO create a symlink and backresulve it
             # Create a temporary directoy
             with tempfile.TemporaryDirectory() as tmpdir:
                 for i, (p, content) in enumerate(zip(paths, chunks)):
-                    temp_p = f"{i:03}_" + os.path.basename(p)
+                    try:
+                        temp_p = f"{i:03}_" + os.path.basename(p)
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        print(f"Error: {p}")
+                        print(f"Error: {content}")
+                        continue
                     path_map[temp_p] = p
+                    content = f"Path: {os.path.relpath(p, notes_dir)}\n" + content
                     with open(os.path.join(tmpdir, temp_p), "w") as f:
                         f.write(content)
 
@@ -156,21 +167,41 @@ def live_search(
                 out = out.stdout.decode().strip()
                 if editor:
                     subprocess.run([editor, path_map[out]])
-                print(out)
+                print(path_map[out])
         else:
             # Reverse for terminal use
             paths.reverse()
             chunks.reverse()
             distances.reverse()
 
-            # Print the results
+            n_lines = 40
+            width = 80
+
+            bat = "bat"
+            bat_available = False
+            try:
+                subprocess.run([bat, "--version"], check=False).returncode == 0
+                bat_available = True
+            except Exception as e:
+                print("Bat not found, using plaintext")
+
             for p, content in zip(paths, chunks):
-                print(p)
-                print("-----------------------------------")
-                # Could I use bat or highlight here somehow?
-                content = content.replace("\n", "  ⏎  ")
-                # Split the content into 80 character chunks
-                for i in range(0, len(content), 80):
-                    print("\t" + content[i : i + 80])
-                print()
-                print()
+                # Print the results
+                console = Console()
+                md = Markdown(f"# {os.path.relpath(p, notes_dir)}")
+
+                console.print(md, justify="left")
+                if bat_available:
+                    # Bat is more readable than rich
+                    subprocess.run([bat, "--color=always", "-l", "md", "--line-range", f":{n_lines}"], text=True, input=content)
+                else:
+                    console.print(Padding(Markdown(content[:n_lines*width]), (1, 8)))
+                    # print(p)
+                    # print("-----------------------------------")
+                    # # Could I use bat or highlight here somehow?
+                    # content = content.replace("\n", "  ⏎  ")
+                    # # Split the content into 80 character chunks
+                    # for i in range(0, len(content), 80):
+                    #     print("\t" + content[i : i + 80])
+                    # print()
+                    # print()
