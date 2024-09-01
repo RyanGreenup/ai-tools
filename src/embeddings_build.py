@@ -176,7 +176,7 @@ def live_search(
                     ["fzf", "-m", "--preview", cmd],
                     cwd=tmpdir,
                     stdout=subprocess.PIPE,
-                    text = True
+                    text=True,
                 )
                 # Get the actual paths
                 out = [path_map[o] for o in out.stdout.strip().splitlines()]
@@ -192,7 +192,6 @@ def live_search(
             n_lines = 40
             width = 80
 
-
             for p, content in zip(paths, chunks):
                 # Print the results
                 console = Console()
@@ -201,9 +200,21 @@ def live_search(
                 console.print(md, justify="left")
                 if bat_available:
                     # Bat is more readable than rich
-                    subprocess.run([bat, "--color=always", "-l", "md", "--line-range", f":{n_lines}"], text=True, input=content)
+                    subprocess.run(
+                        [
+                            bat,
+                            "--paging=never",
+                            "--color=always",
+                            "-l",
+                            "md",
+                            "--line-range",
+                            f":{n_lines}",
+                        ],
+                        text=True,
+                        input=content,
+                    )
                 else:
-                    console.print(Padding(Markdown(content[:n_lines*width]), (1, 8)))
+                    console.print(Padding(Markdown(content[: n_lines * width]), (1, 8)))
                     # print(p)
                     # print("-----------------------------------")
                     # # Could I use bat or highlight here somehow?
