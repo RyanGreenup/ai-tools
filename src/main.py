@@ -102,7 +102,7 @@ def search(
 def live_search(
     ctx: typer.Context,
     editor: str = None,  # type:ignore  # Typer doesn't support None
-    fzf: bool = True,
+    fzf: bool = False,
 ):
     """
     Perform a semantic search through notes and generate embeddings if needed
