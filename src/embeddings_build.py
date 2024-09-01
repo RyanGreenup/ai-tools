@@ -141,6 +141,16 @@ def live_search(
         chunks = results["documents"][0]
         distances = results["distances"][0]
 
+        bat = "bat"
+        bat_available = False
+
+        try:
+            subprocess.run([bat, "--version"], check=False).returncode == 0
+            bat_available = True
+        except Exception as e:
+            print("Bat not found, using plaintext", file=sys.stderr)
+            print(e, file=sys.stderr)
+
         path_map = dict()
         if fzf:
             # TODO create a symlink and backresulve it
@@ -159,15 +169,20 @@ def live_search(
                     with open(os.path.join(tmpdir, temp_p), "w") as f:
                         f.write(content)
 
+                cmd = "cat {}"
+                if bat_available:
+                    cmd = "bat {} --color=always --paging=never"
                 out = subprocess.run(
-                    ["fzf", "--preview", "bat {} --color=always"],
+                    ["fzf", "-m", "--preview", cmd],
                     cwd=tmpdir,
                     stdout=subprocess.PIPE,
+                    text = True
                 )
-                out = out.stdout.decode().strip()
+                # Get the actual paths
+                out = [path_map[o] for o in out.stdout.strip().splitlines()]
                 if editor:
-                    subprocess.run([editor, path_map[out]])
-                print(path_map[out])
+                    subprocess.run([editor, *out])
+                [print(o) for o in out]
         else:
             # Reverse for terminal use
             paths.reverse()
@@ -177,13 +192,6 @@ def live_search(
             n_lines = 40
             width = 80
 
-            bat = "bat"
-            bat_available = False
-            try:
-                subprocess.run([bat, "--version"], check=False).returncode == 0
-                bat_available = True
-            except Exception as e:
-                print("Bat not found, using plaintext")
 
             for p, content in zip(paths, chunks):
                 # Print the results

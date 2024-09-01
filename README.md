@@ -8,6 +8,9 @@ Read [the documentation](./docs/index.org) for more information.
 
 ```sh
 pipx install "git+https://github.com/RyanGreenup/ai-tools"
+
+source ~/.local/pipx/venvs/ai-tools/bin/activate.fish
+python -m nltk.downloader all
 ```
 
 
