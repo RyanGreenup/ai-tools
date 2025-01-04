@@ -4,12 +4,12 @@ CLI in python that uses ollama to provide a basic workflow for search, chat, rag
 Read [the documentation](./docs/index.org) for more information.
 ## Installation
 
-### pipx
+### pipxu
 
 ```sh
-pipx install "git+https://github.com/RyanGreenup/ai-tools"
+pipxu install "git+https://github.com/RyanGreenup/ai-tools"
 
-source ~/.local/pipx/venvs/ai-tools/bin/activate.fish
+source ~/.local/pipxu/venvs/ai-tools/bin/activate.fish
 python -m nltk.downloader all
 ```
 

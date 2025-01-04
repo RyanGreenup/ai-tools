@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [ {include = "*", from="src"} ]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.13"
+python = ">=3.11,<=3.13.2"
 ollama = "^0.2.1"
 tqdm = "^4.66.4"
 chromadb = "^0.5.3"
@@ -15,7 +15,7 @@ typer = "^0.12.3"
 langchain-community = "^0.2.6"
 langchain-text-splitters = "^0.2.2"
 toml = "^0.10.2"
-unstructured = {extras = ["docx", "md", "partition", "pptx"], version = "^0.14.9"}
+unstructured = {extras = ["docx", "md", "pptx"], version = "^0.14.9"}
 matplotlib = "^3.9.0"
 scikit-learn = "^1.5.0"
 umap-learn = "^0.5.6"
